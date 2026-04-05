@@ -674,7 +674,7 @@
     <div class="btncontainer">
         <button id="restart-btn" class="btn btn-warning hidden">🔄 Reiniciar</button>
         <button id="vptabuada-btn" class="btn btn-warning hidden">Voltar para tabuada</button>
-<button class="voltar menor" onclick="localStorage.removeItem('tabuada_modo'); window.location.replace('https://jeffersonsza.github.io/jogo-escolar/')">Voltar para jogos</button>    
+<button class="voltar menor">Voltar para jogos</button>    
         
         <div class="container">
         <div class="screen" id="welcome-screen">
@@ -1136,7 +1136,10 @@ function configurarEventListeners() {
     if (elements.nextLevelBtn) elements.nextLevelBtn.addEventListener('click', nextLevel);
     if (elements.restartBtn) elements.restartBtn.addEventListener('click', reiniciarJogo);
     if (elements.vptabuadaBtn) elements.vptabuadaBtn.addEventListener('click', retornarparatabuada);
-    if (elements.voltarBtn) elements.voltarBtn.addEventListener('click', () => location.reload());
+    if (elements.voltarBtn) elements.voltarBtn.addEventListener('click', () => {
+    localStorage.removeItem('tabuada_modo');
+    window.location.href = 'https://jeffersonsza.github.io/jogo-escolar';
+    });
     if (elements.viewStatsBtn) elements.viewStatsBtn.addEventListener('click', mostrarHistoricoDaSessao);
     if (elements.viewLevelStats) elements.viewLevelStats.addEventListener('click', () => mostrarEstatisticasAtuais('result'));
     if (elements.viewSessionHistory) elements.viewSessionHistory.addEventListener('click', mostrarHistoricoDaSessao);
