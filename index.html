@@ -756,6 +756,8 @@
             <div id="modo-indicator" style="display: none; color: #ff6b6b; font-weight: bold; margin-top: 5px; font-size: 0.9rem;">
                 🔥 Modo Ativo: <span id="modo-ativo"></span>
             </div>
+            <button class="voltar menor">Voltar para a plataforma de jogos</button>  
+
         </div>
         
         <div class="screen hidden" id="game-screen">
@@ -881,7 +883,7 @@ let modoDificuldade = 'normal';
 
 const SAVE_KEY = 'tabuada_game_state';
 const STATS_KEY = 'tabuada_statistics';
-const MAX_HISTORICO = 100;
+const MAX_HISTORICO = 10;
 const MIN_RESPOSTAS_PARA_SALVAR = 10;
 
 let questionStartTime = null;
@@ -894,7 +896,7 @@ const ANOS = ['6º', '7º', '8º', '9º'];
 const LETRAS = ['A', 'B', 'C', 'D', 'E', 'F'];
 const NUMEROS = Array.from({ length: 40 }, (_, i) => (i + 1).toString());
 
-const TEMPO_MAXIMO_RECUPERACAO = 7 * 60 * 1000;
+const TEMPO_MAXIMO_RECUPERACAO = 10 * 60 * 1000;
 
 let elements = null;
 let levelConfigs = null;
