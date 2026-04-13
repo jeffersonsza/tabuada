@@ -119,8 +119,11 @@
         .game-info {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             width: 100%;
             margin-bottom: 20px;
+            gap: 8px;
+            flex-wrap: wrap;
         }
 
         .info-box {
@@ -129,7 +132,7 @@
             border-radius: 10px;
             text-align: center;
             flex: 1;
-            margin: 0 10px;
+            margin: 0 5px;
         }
 
         .info-label {
@@ -141,6 +144,7 @@
             font-size: 1.5rem;
             font-weight: bold;
             color: #2575fc;
+            transition: opacity 0.3s;
         }
 
         .timer {
@@ -150,6 +154,7 @@
             border-radius: 10px;
             margin-bottom: 20px;
             overflow: hidden;
+            transition: opacity 0.3s;
         }
 
         .timer-progress {
@@ -157,6 +162,29 @@
             background-color: #20c997;
             width: 100%;
             transition: width 0.1s linear;
+        }
+
+        .timer-hidden {
+            display: none !important;
+        }
+
+        .toggle-btn {
+            background: #f0f0f0;
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            font-size: 1.3rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .toggle-btn:hover {
+            background: #e0e0e0;
+            transform: scale(1.05);
         }
 
         .game-area {
@@ -666,6 +694,24 @@
                 flex-direction: column;
                 align-items: center;
             }
+
+            .toggle-btn {
+                width: 35px;
+                height: 35px;
+                font-size: 1rem;
+            }
+
+            .game-info {
+                gap: 5px;
+            }
+
+            .info-box {
+                padding: 8px 12px;
+            }
+
+            .info-value {
+                font-size: 1.2rem;
+            }
         }
     </style>
 </head>
@@ -674,9 +720,9 @@
     <div class="btncontainer">
         <button id="restart-btn" class="btn btn-warning hidden">🔄 Reiniciar</button>
         <button id="vptabuada-btn" class="btn btn-warning hidden">Voltar para tabuada</button>
-
-        
-        <div class="container">
+    </div>
+    
+    <div class="container">
         <div class="screen" id="welcome-screen">
             <h1>Bem vindo ao jogo da tabuada</h1>
             
@@ -742,10 +788,6 @@
             </div>
             
             <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px; flex-wrap: wrap;">
-                <label id="hide-timer-label" style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: #f0f0f0; padding: 8px 15px; border-radius: 20px;">
-                    <input type="checkbox" id="hide-timer-checkbox" style="width: 20px; height: 20px; cursor: pointer;">
-                    <span style="font-size: 14px;">🔇 Esconder barra de tempo</span>
-                </label>
                 <button class="btn btn-stats" id="view-stats-btn">📊 Ver Estatísticas</button>
             </div>
             
@@ -757,14 +799,16 @@
                 🔥 Modo Ativo: <span id="modo-ativo"></span>
             </div>
             <button class="voltar menor">Voltar para a plataforma de jogos</button>  
-
         </div>
         
         <div class="screen hidden" id="game-screen">
             <div class="game-info">
                 <div class="info-box"><div class="info-label">Acertos</div><div class="info-value" id="score">0/20</div></div>
-                <div class="info-box"><div class="info-label">Tempo</div><div class="info-value" id="time">25s</div></div>
+                <div class="info-box timer-text-container"><div class="info-label">Tempo</div><div class="info-value" id="time">25s</div></div>
+                <button id="toggle-timer-text-btn" class="toggle-btn" title="Esconder/Mostrar cronômetro">👀</button>
                 <div class="info-box"><div class="info-label">Nível</div><div class="info-value" id="level-display">1</div></div>
+                
+                <button id="toggle-timer-bar-btn" class="toggle-btn" title="Esconder/Mostrar barra de tempo">👀</button>
             </div>
             <div class="timer" id="timer-container"><div class="timer-progress" id="timer-progress"></div></div>
             <p class="info-label" id="level-description">Nível 1: Tabuada do 2</p>
@@ -877,6 +921,7 @@ let tempoConfigurado = 26;
 let pageVisible = true;
 let timeWhenHidden = 0;
 let abaTrocada = false;
+let hideTimerText = false;
 let hideTimerBar = false;
 
 let modoDificuldade = 'normal';
@@ -1036,7 +1081,25 @@ function init() {
     configurarModosDificuldade();
     setupVisibilityDetection();
     carregarModoSalvo();
+    carregarPreferenciasTimer();
     window.tabuada = { currentLevel, score, remainingTime, gameActive };
+}
+
+function carregarPreferenciasTimer() {
+    const savedHideText = localStorage.getItem('hide_timer_text');
+    const savedHideBar = localStorage.getItem('hide_timer_bar');
+    
+    if (savedHideText === 'true') {
+        hideTimerText = true;
+        if (elements.toggleTimerTextBtn) elements.toggleTimerTextBtn.textContent = '🙈';
+        if (elements.timeElement) elements.timeElement.style.opacity = '0';
+    }
+    
+    if (savedHideBar === 'true') {
+        hideTimerBar = true;
+        if (elements.toggleTimerBarBtn) elements.toggleTimerBarBtn.textContent = '🙈';
+        if (elements.timerContainer) elements.timerContainer.classList.add('timer-hidden');
+    }
 }
 
 function configurarModosDificuldade() {
@@ -1120,7 +1183,8 @@ function configurarElementosDOM() {
         decreaseTime: document.getElementById('decrease-time'),
         increaseTime: document.getElementById('increase-time'),
         timeInput: document.getElementById('time-input'),
-        hideTimerCheckbox: document.getElementById('hide-timer-checkbox'),
+        toggleTimerTextBtn: document.getElementById('toggle-timer-text-btn'),
+        toggleTimerBarBtn: document.getElementById('toggle-timer-bar-btn')
     };
 }
 
@@ -1137,8 +1201,8 @@ function configurarEventListeners() {
     if (elements.restartBtn) elements.restartBtn.addEventListener('click', reiniciarJogo);
     if (elements.vptabuadaBtn) elements.vptabuadaBtn.addEventListener('click', retornarparatabuada);
     if (elements.voltarBtn) elements.voltarBtn.addEventListener('click', () => {
-    localStorage.removeItem('tabuada_modo');
-    window.location.href = 'https://jeffersonsza.github.io/jogo-escolar';
+        localStorage.removeItem('tabuada_modo');
+        window.location.href = 'https://jeffersonsza.github.io/jogo-escolar';
     });
     if (elements.viewStatsBtn) elements.viewStatsBtn.addEventListener('click', mostrarHistoricoDaSessao);
     if (elements.viewLevelStats) elements.viewLevelStats.addEventListener('click', () => mostrarEstatisticasAtuais('result'));
@@ -1154,16 +1218,35 @@ function configurarEventListeners() {
     if (elements.backToWelcome) elements.backToWelcome.addEventListener('click', () => {
         elements.historyScreen.classList.add('hidden');
         elements.welcomeScreen.classList.remove('hidden');
-        limparModoSalvo();  // ← LINHA ADICIONADA
+        limparModoSalvo();
     });
     if (elements.clearHistoryBtn) elements.clearHistoryBtn.addEventListener('click', limparHistorico);
     
-    if (elements.hideTimerCheckbox) {
-        elements.hideTimerCheckbox.addEventListener('change', (e) => {
-            hideTimerBar = e.target.checked;
-            if (gameActive) {
-                atualizarVisibilidadeBarraTempo();
+    // Botão para esconder/mostrar texto do cronômetro
+    if (elements.toggleTimerTextBtn) {
+        elements.toggleTimerTextBtn.addEventListener('click', () => {
+            hideTimerText = !hideTimerText;
+            localStorage.setItem('hide_timer_text', hideTimerText ? 'true' : 'false');
+            if (elements.timeElement) {
+                elements.timeElement.style.opacity = hideTimerText ? '0' : '1';
             }
+            elements.toggleTimerTextBtn.textContent = hideTimerText ? '🙈' : '👀';
+        });
+    }
+    
+    // Botão para esconder/mostrar barra de tempo
+    if (elements.toggleTimerBarBtn) {
+        elements.toggleTimerBarBtn.addEventListener('click', () => {
+            hideTimerBar = !hideTimerBar;
+            localStorage.setItem('hide_timer_bar', hideTimerBar ? 'true' : 'false');
+            if (elements.timerContainer) {
+                if (hideTimerBar) {
+                    elements.timerContainer.classList.add('timer-hidden');
+                } else {
+                    elements.timerContainer.classList.remove('timer-hidden');
+                }
+            }
+            elements.toggleTimerBarBtn.textContent = hideTimerBar ? '🙈' : '👀';
         });
     }
     
@@ -1486,58 +1569,50 @@ function mostrarHistoricoDaSessao() {
         elements.historyList.appendChild(item);
     });
     
-
-
     document.querySelectorAll('.history-recover-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const nivelJogar = parseInt(e.target.dataset.nivelJogar);
-        const aluno = JSON.parse(e.target.dataset.aluno);
-        // ⚠️ NÃO use o 'modo' do dataset!
-        // const modo = e.target.dataset.modo;  ← REMOVA OU IGNORE
-        
-        alunoAno = aluno.ano;
-        alunoLetra = aluno.letra;
-        alunoNumero = aluno.numero;
-        
-        document.getElementById('aluno-ano-display').textContent = alunoAno;
-        document.getElementById('aluno-letra-display').textContent = alunoLetra;
-        document.getElementById('aluno-numero-display').textContent = alunoNumero;
-        document.getElementById('aluno-info').style.display = 'block';
-        
-        document.querySelectorAll('.ano-btn').forEach(btn => {
-            if (btn.dataset.ano === alunoAno) btn.classList.add('selected');
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const nivelJogar = parseInt(e.target.dataset.nivelJogar);
+            const aluno = JSON.parse(e.target.dataset.aluno);
+            
+            alunoAno = aluno.ano;
+            alunoLetra = aluno.letra;
+            alunoNumero = aluno.numero;
+            
+            document.getElementById('aluno-ano-display').textContent = alunoAno;
+            document.getElementById('aluno-letra-display').textContent = alunoLetra;
+            document.getElementById('aluno-numero-display').textContent = alunoNumero;
+            document.getElementById('aluno-info').style.display = 'block';
+            
+            document.querySelectorAll('.ano-btn').forEach(btn => {
+                if (btn.dataset.ano === alunoAno) btn.classList.add('selected');
+            });
+            document.querySelectorAll('.letra-btn').forEach(btn => {
+                if (btn.dataset.letra === alunoLetra) btn.classList.add('selected');
+            });
+            document.querySelectorAll('.numero-btn').forEach(btn => {
+                if (btn.dataset.numero === alunoNumero) btn.classList.add('selected');
+            });
+            
+            nivelConfigurado = nivelJogar;
+            currentLevel = nivelJogar;
+            
+            const hoje = new Date().toDateString();
+            const estado = {
+                currentLevel: nivelJogar,
+                data: hoje,
+                timestamp: Date.now()
+            };
+            localStorage.setItem(SAVE_KEY, JSON.stringify(estado));
+            
+            elements.historyScreen.classList.add('hidden');
+            elements.welcomeScreen.classList.remove('hidden');
+            
+            atualizarModoPelosCheckboxes();
+            
+            setTimeout(() => startGame(), 100);
         });
-        document.querySelectorAll('.letra-btn').forEach(btn => {
-            if (btn.dataset.letra === alunoLetra) btn.classList.add('selected');
-        });
-        document.querySelectorAll('.numero-btn').forEach(btn => {
-            if (btn.dataset.numero === alunoNumero) btn.classList.add('selected');
-        });
-        
-
-        
-        nivelConfigurado = nivelJogar;
-        currentLevel = nivelJogar;
-        
-        const hoje = new Date().toDateString();
-        const estado = {
-            currentLevel: nivelJogar,
-            data: hoje,
-            timestamp: Date.now()
-  
-        };
-        localStorage.setItem(SAVE_KEY, JSON.stringify(estado));
-        
-        elements.historyScreen.classList.add('hidden');
-        elements.welcomeScreen.classList.remove('hidden');
-        
-        // ⚠️ Força a leitura dos checkboxes antes de começar
-        atualizarModoPelosCheckboxes();
-        
-        setTimeout(() => startGame(), 100);
     });
-});
     
     document.querySelectorAll('.history-view-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -1567,8 +1642,7 @@ function limparHistorico() {
 }
 
 function startGame(reiniciado) {
-
-    operacoesStats = {};  // ← ADICIONE ESTA LINHA
+    operacoesStats = {};
     if (!alunoAno || !alunoLetra || !alunoNumero) {
         alert('⚠️ Identifique-se primeiro: Ano → Turma → Número da Chamada');
         return;
@@ -1615,7 +1689,17 @@ function startGame(reiniciado) {
     elements.timerProgress.style.width = '100%';
     elements.timerProgress.style.backgroundColor = '#20c997';
     
-    atualizarVisibilidadeBarraTempo();
+    // Aplica preferências de visibilidade ao iniciar o jogo
+    if (elements.timeElement) {
+        elements.timeElement.style.opacity = hideTimerText ? '0' : '1';
+    }
+    if (elements.timerContainer) {
+        if (hideTimerBar) {
+            elements.timerContainer.classList.add('timer-hidden');
+        } else {
+            elements.timerContainer.classList.remove('timer-hidden');
+        }
+    }
     
     updateLevelInfo();
     generateQuestion();
@@ -1624,33 +1708,19 @@ function startGame(reiniciado) {
     salvarEstadoJogo();
 }
 
-function atualizarVisibilidadeBarraTempo() {
-    if (elements.timerContainer) {
-        if (hideTimerBar) {
-            elements.timerContainer.style.display = 'none';
-        } else {
-            elements.timerContainer.style.display = 'block';
-        }
-    }
-}
-
 function generateQuestion() {
     const config = levelConfigs[currentLevel];
     
-    // Gerar lista de todas as operações possíveis para este nível
     let operacoesPossiveis = [];
     
     if (config.multipliers.length > 1) {
-        // Para níveis com múltiplos multiplicadores (8, 9, 10)
         for (let m of config.multipliers) {
-            for (let v = 2; v <= 9; v++) { // valores de 2 a 9
+            for (let v = 2; v <= 9; v++) {
                 operacoesPossiveis.push({ multiplicador: m, valor: v });
-                // Inicializa no sistema de probabilidade se não existir
                 inicializarOperacao(m, v);
             }
         }
     } else {
-        // Para níveis com um multiplicador fixo (1 a 7)
         const multiplicador = config.multipliers[0];
         for (let v = 2; v <= 9; v++) {
             operacoesPossiveis.push({ multiplicador: multiplicador, valor: v });
@@ -1658,17 +1728,14 @@ function generateQuestion() {
         }
     }
     
-    // Aplica decaimento gradual nos pesos
     aplicarDecaimento();
     
-    // Escolhe operação baseada no peso (probabilidade)
     const operacaoEscolhida = escolherOperacaoPorPeso(operacoesPossiveis);
     
     currentMultiplier = operacaoEscolhida.multiplicador;
     currentValue = operacaoEscolhida.valor;
     correctAnswer = currentMultiplier * currentValue;
     
-    // Atualiza a interface
     if (config.multipliers.length > 1) {
         elements.fixedCard.textContent = currentMultiplier;
     }
@@ -1709,16 +1776,12 @@ function checkAnswer(answer) {
     
     const acertou = (answer === correctAnswer);
     
-    // ============================================
-    // SISTEMA DE PROBABILIDADE - Registrar acerto/erro
-    // ============================================
     if (acertou) {
         registrarAcerto(currentMultiplier, currentValue);
     } else {
         registrarErro(currentMultiplier, currentValue);
     }
     
-    // Registrar resposta para estatísticas
     registrarResposta(acertou);
     desabilitarOpcoes(elements.optionsContainer);
     
@@ -1728,31 +1791,26 @@ function checkAnswer(answer) {
         elements.scoreElement.textContent = `${score}/${totalQuestions}`;
         elements.resultElement.textContent = correctAnswer;
         
-        // Bônus de tempo ao acertar
         if (currentLevel >= 8 && currentLevel <= 10) {
             remainingTime += 1.7;
         } else {
             remainingTime += 1.5;
         }
     } else {
-        // Penalidade de tempo ao errar
         remainingTime = Math.max(0.1, remainingTime - 2);
         elements.resultElement.textContent = correctAnswer;
     }
     
-    // Atualiza baralho
     elements.deck.querySelector('div').textContent = remainingCards;
     remainingTime = Math.round(remainingTime * 10) / 10;
     updateTimeDisplay();
     atualizarTimerVisual((remainingTime / timeLimit) * 100);
     
-    // Verifica fim do jogo
     if (score >= totalQuestions || remainingCards <= 0 || remainingTime <= 0.1) {
         setTimeout(() => { limparTimer(); endGame(); }, 800);
         return;
     }
     
-    // Próxima questão
     setTimeout(() => { if (gameActive) generateQuestion(); }, 800);
 }
 
@@ -1765,8 +1823,6 @@ function nextLevel() {
     nivelConfigurado = currentLevel;
     startGame();
 }
-
-
 
 function updateLevelInfo() {
     const config = levelConfigs[currentLevel];
@@ -1887,7 +1943,16 @@ function iniciarNivelAtual() {
     elements.timerProgress.style.width = '100%';
     elements.timerProgress.style.backgroundColor = '#20c997';
     
-    atualizarVisibilidadeBarraTempo();
+    if (elements.timeElement) {
+        elements.timeElement.style.opacity = hideTimerText ? '0' : '1';
+    }
+    if (elements.timerContainer) {
+        if (hideTimerBar) {
+            elements.timerContainer.classList.add('timer-hidden');
+        } else {
+            elements.timerContainer.classList.remove('timer-hidden');
+        }
+    }
     
     updateLevelInfo();
     generateQuestion();
@@ -1910,7 +1975,6 @@ function verificarJogoSalvo() {
     try {
         const estado = JSON.parse(savedState);
         if (estado.data === new Date().toDateString()) {
-            // ← REMOVA TODO O BLOCO 'if (estado.modo)'
             return estado.currentLevel;
         } else { 
             localStorage.removeItem(SAVE_KEY); 
@@ -1946,7 +2010,16 @@ function iniciarJogoNoNivel(nivel) {
     elements.timerProgress.style.width = '100%';
     elements.timerProgress.style.backgroundColor = '#20c997';
     
-    atualizarVisibilidadeBarraTempo();
+    if (elements.timeElement) {
+        elements.timeElement.style.opacity = hideTimerText ? '0' : '1';
+    }
+    if (elements.timerContainer) {
+        if (hideTimerBar) {
+            elements.timerContainer.classList.add('timer-hidden');
+        } else {
+            elements.timerContainer.classList.remove('timer-hidden');
+        }
+    }
     
     updateLevelInfo();
     generateQuestion();
@@ -1955,8 +2028,6 @@ function iniciarJogoNoNivel(nivel) {
 }
 
 function retornarparatabuada() {
-
-
     gameActive = false;
     limparTimer();
     elements.gameScreen.classList.add('hidden');
@@ -1966,8 +2037,7 @@ function retornarparatabuada() {
     elements.welcomeScreen.classList.remove('hidden');
     if (elements.restartBtn) elements.restartBtn.classList.add('hidden');
     if (elements.vptabuadaBtn) elements.vptabuadaBtn.classList.add('hidden');
-    limparModoSalvo();  // ← ÚNICA LINHA ADICIONADA
-
+    limparModoSalvo();
 }
 
 function abrirModalSenha() { elements.passwordModal.classList.remove('hidden'); elements.passwordInput.value = ''; elements.passwordInput.focus(); }
@@ -2024,18 +2094,9 @@ function aplicarConfiguracoes() {
 }
 
 function limparModoSalvo() {
-
-    
-    // Ver o que estava salvo antes
-    const antes = localStorage.getItem('tabuada_modo');
-    
-    // Remove do storage
     localStorage.removeItem('tabuada_modo');
-    
-    // Reseta a variável global
     modoDificuldade = 'normal';
     
-    // Desmarca os checkboxes
     const modoDobroCheck = document.getElementById('modo-dobro');
     const modoTriploCheck = document.getElementById('modo-triplo');
     
@@ -2046,22 +2107,17 @@ function limparModoSalvo() {
         modoTriploCheck.checked = false;
     }
     
-    // Atualiza o indicador visual
     atualizarIndicadorModo();
-    
-    // Verificar se realmente foi limpo
-    const depois = localStorage.getItem('tabuada_modo');
-
 }
 
 // ============================================
 // SISTEMA DE PROBABILIDADE PARA OPERAÇÕES
 // ============================================
-let operacoesStats = {}; // Armazena estatísticas de cada operação
-const DECAIMENTO_POR_OPERACAO = 0.9; // 10% de decaimento por operação gerada
-const BONUS_ACERTO = 0.5; // 50% de redução de peso ao acertar
-const BONUS_ERRO = 0.5; // 50% de aumento de peso ao errar
-const DECAIMENTO_ERRO = 0.8; // 20% de decaimento para erros
+let operacoesStats = {};
+const DECAIMENTO_POR_OPERACAO = 0.9;
+const BONUS_ACERTO = 0.5;
+const BONUS_ERRO = 0.5;
+const DECAIMENTO_ERRO = 0.8;
 
 function getChaveOperacao(multiplicador, valor) {
     return `${multiplicador}x${valor}`;
@@ -2073,7 +2129,7 @@ function inicializarOperacao(multiplicador, valor) {
         operacoesStats[chave] = {
             multiplicador: multiplicador,
             valor: valor,
-            peso: 1.0,           // Peso base para sorteio
+            peso: 1.0,
             acertos: 0,
             erros: 0,
             ultimaVez: Date.now()
@@ -2086,7 +2142,6 @@ function registrarAcerto(multiplicador, valor) {
     const chave = getChaveOperacao(multiplicador, valor);
     if (operacoesStats[chave]) {
         operacoesStats[chave].acertos++;
-        // Reduz peso em 50% (fica mais difícil de ser sorteado)
         operacoesStats[chave].peso = Math.max(0.1, operacoesStats[chave].peso * (1 - BONUS_ACERTO));
         operacoesStats[chave].ultimaVez = Date.now();
     }
@@ -2096,28 +2151,23 @@ function registrarErro(multiplicador, valor) {
     const chave = getChaveOperacao(multiplicador, valor);
     if (operacoesStats[chave]) {
         operacoesStats[chave].erros++;
-        // Aumenta peso em 50% (fica mais fácil de ser sorteado)
         operacoesStats[chave].peso = Math.min(5.0, operacoesStats[chave].peso * (1 + BONUS_ERRO));
         operacoesStats[chave].ultimaVez = Date.now();
     }
 }
 
 function aplicarDecaimento() {
-    // A cada operação gerada, o peso de todas as operações volta um pouco ao normal
     for (let chave in operacoesStats) {
         const stat = operacoesStats[chave];
         if (stat.peso < 1.0) {
-            // Se peso < 1, aumenta em direção a 1
             stat.peso = Math.min(1.0, stat.peso + (1 - stat.peso) * (1 - DECAIMENTO_POR_OPERACAO));
         } else if (stat.peso > 1.0) {
-            // Se peso > 1, diminui em direção a 1
             stat.peso = Math.max(1.0, stat.peso - (stat.peso - 1) * (1 - DECAIMENTO_ERRO));
         }
     }
 }
 
 function escolherOperacaoPorPeso(operacoesDisponiveis) {
-    // Calcula peso total
     let pesoTotal = 0;
     for (let i = 0; i < operacoesDisponiveis.length; i++) {
         const op = operacoesDisponiveis[i];
@@ -2125,11 +2175,10 @@ function escolherOperacaoPorPeso(operacoesDisponiveis) {
         if (operacoesStats[chave]) {
             pesoTotal += operacoesStats[chave].peso;
         } else {
-            pesoTotal += 1.0; // Peso padrão para operações novas
+            pesoTotal += 1.0;
         }
     }
     
-    // Sorteia baseado no peso
     let sorteio = Math.random() * pesoTotal;
     let acumulado = 0;
     
@@ -2143,7 +2192,7 @@ function escolherOperacaoPorPeso(operacoesDisponiveis) {
         }
     }
     
-    return operacoesDisponiveis[0]; // Fallback
+    return operacoesDisponiveis[0];
 }
 
 window.addEventListener('beforeunload', () => { if (gameActive) salvarEstadoJogo(); });
